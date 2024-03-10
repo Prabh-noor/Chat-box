@@ -84,7 +84,7 @@ $(function () {
     setUsernameModal.on('hidden.bs.modal', function(){
         if(!thisUser){
             let name = getRandomName();
-            emitAnnouncement('newUser', username);
+            emitAnnouncement('newUser', name);
             setUserName(name);
         }
     });
