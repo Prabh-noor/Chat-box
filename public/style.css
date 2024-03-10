@@ -180,3 +180,18 @@ body {
     cursor: pointer;
     color: #666;
 }
+
+.announcement {
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    padding: 5px;
+    margin: 10px;
+    font-size: 11px;
+    text-align: center;
+    color: #d18f16;
+}
+
+.announcement p {
+    margin: 0;
+}

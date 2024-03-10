@@ -6,6 +6,8 @@ const server = http.createServer(app)
 const websocket = socketIO(server)
 
 app.use(express.static(__dirname+'/public'));
+// Serve static files from node modules
+// app.use('/vendor', express.static(__dirname+'/node_modules'));
 
 app.get('/', function(req, res){
     res.render('index.ejs')
@@ -14,17 +16,28 @@ app.get('/', function(req, res){
 websocket.on('connection', function(socket){
     console.log('A user got connected')
 
-    // socket.on('setUsername', function(message, acknowledgementCallback){
-    //     try{
-    //     } catch (error) {
-    //     }
-    // })
-    socket.on('newMessage', function(message, acknowledgementCallback){
+    socket.on('newAnnouncement', function(data, callback){
+        try{
+            let message = "";
+            if(data.type == "newUser"){
+                message = "New user joined with name "+data.value;
+            }else if(data.type == "changeName"){
+                message = data.prev+" changed their name to "+data.value;
+            }
+            if(message != ''){
+                websocket.emit('newAnnouncement', message);
+            }
+        } catch (error) {
+            callback("Something went wrong!")
+        }
+    })
+
+    socket.on('newMessage', function(message, callback){
         try {
             websocket.emit('newMessage', message)
-            acknowledgementCallback('success')
+            callback('success')
         } catch (error) {
-            acknowledgementCallback('error')
+            callback('error')
         }
     })
     socket.on('disconnect', function(){

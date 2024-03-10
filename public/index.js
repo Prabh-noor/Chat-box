@@ -51,16 +51,27 @@ const setUsernameModal = $("#setUsernameModal");
 const messagesArea = $("#messagesArea");
 const headerName = $("#headerName");
 let thisUser;
+let socket;
 $(function () {
     randomUsernameBtn.click(function () {
-        let randomIndex = Math.floor(Math.random() * randomUserNames.length)
-        let newUserName = randomUserNames[randomIndex];
+        newUserName = getRandomName();
         inputUserName.val(newUserName);
     })
+
+    function getRandomName(){
+        let randomIndex = Math.floor(Math.random() * randomUserNames.length)
+        let newUserName = randomUserNames[randomIndex];
+        return newUserName;
+    }
 
     saveUsernameBtn.click(function () {
         let username = inputUserName.val();
         if (username != '') {
+            if(thisUser){
+                emitAnnouncement('changeName', username, thisUser);
+            }else{
+                emitAnnouncement('newUser', username);
+            }
             setUserName(username);
             setUsernameModal.modal('hide');
         }
@@ -70,6 +81,14 @@ $(function () {
         setUsernameModal.modal('show')
     })
 
+    setUsernameModal.on('hidden.bs.modal', function(){
+        if(!thisUser){
+            let name = getRandomName();
+            emitAnnouncement('newUser', username);
+            setUserName(name);
+        }
+    });
+
     let savedUser = getUserCookie();
     if(!savedUser){
         setUsernameModal.modal('show');
@@ -77,16 +96,21 @@ $(function () {
         setUserName(savedUser);
     }
 
-    var socket = io(); // send out connection request to server
+    socket = io(); // send out connection request to server
 
     socket.on('connect', () => {
-        console.log("Connected to web socket server.");
+        loadFromLocalStorage();
     })
 
     socket.on('newMessage', function (message) {
+        saveToLocalStorage(message);
         appendMessage(message);
         messagesArea.animate({scrollTop: messagesArea.prop("scrollHeight")});
 
+    })
+
+    socket.on('newAnnouncement', function(message){
+        appendAnnouncement(message);
     })
 
     socket.on('disconnect', () => console.log("Disconnected from server"))
@@ -106,6 +130,7 @@ $(function () {
             })
         }
     })
+
 });
 
 messageForm.on('submit', (e) => e.preventDefault() );
@@ -128,6 +153,11 @@ function appendMessage(message) {
                     </div>
                 </div>
             </div>`;
+    messagesArea.append(html);
+}
+
+function appendAnnouncement(message){
+    let html = `<div class="announcement"><p>${message}</p></div>`;
     messagesArea.append(html);
 }
 
@@ -158,4 +188,32 @@ function getUserCookie() {
         }
     }
     return "";
+}
+
+function saveToLocalStorage(message){
+    var existingMsg = localStorage.getItem('msg');
+    var msgsObj = (existingMsg != null) ? JSON.parse(existingMsg) : [];
+    msgsObj.push(message);
+    msgsObj = JSON.stringify(msgsObj);
+    localStorage.setItem('msg', msgsObj);
+}
+
+function loadFromLocalStorage(){
+    var existingMsg = localStorage.getItem('msg');
+    var msgsObj = (existingMsg != null) ? JSON.parse(existingMsg) : {};
+    if (Object.keys(msgsObj).length > 0) {
+        msgsObj.map(function(message){
+            appendMessage(message);
+        });
+    }
+}
+function emitAnnouncement(type, value, updatedFrom = null){
+    let data = {
+        type: type,
+        value: value
+    }
+    if(updatedFrom){
+        data.prev = updatedFrom;
+    }
+    socket.emit('newAnnouncement', data);
 }
