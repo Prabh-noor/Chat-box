@@ -43,7 +43,7 @@ body {
 
 @media only screen and (max-width: 768px) {
     .msger {
-        height: 100dvh; /* Set height for mobile devices */
+        height: 100svh; /* Set height for mobile devices */
     }
 }
 
